@@ -16,8 +16,16 @@
             font-family: Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
+.qr-code {
+    position: absolute;
+    top: -18px;
+    left: 20px;
+    width: 80px;
+    height: 80px;
+}
 
         .container {
+			position: relative;
             width: 100%;
             max-width: 800px;
             display: flex;
@@ -91,6 +99,7 @@
 </head>
 <body>
     <div class="container">
+	<img src=".\QRCode.png" alt="QR Code" class="qr-code">
         <input type="file" id="fileInput" class="file-input" accept=".txt">
         <div class="display-box">
             <p id="wordDisplay" class="word-text">Please load a text file</p>
