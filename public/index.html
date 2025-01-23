@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Display</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .display-box {
+            width: 100%;
+            height: 400px;
+            background: #d4e6ff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .word-text {
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            opacity: 1;
+            transition: opacity 1s ease;
+        }
+
+        .fade-out {
+            opacity: 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .file-input {
+            margin-bottom: 20px;
+        }
+
+        #currentIndex {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <input type="file" id="fileInput" class="file-input" accept=".txt">
+        <div class="display-box">
+            <p id="wordDisplay" class="word-text">Please load a text file</p>
+        </div>
+        <div class="controls">
+            <button id="prevButton" disabled>Previous</button>
+            <button id="nextButton" disabled>Next</button>
+        </div>
+        <div id="currentIndex"></div>
+    </div>
+
+    <script>
+        const socket = io();
+        let wordList = [];
+        let currentIndex = 0;
+        const wordDisplay = document.getElementById('wordDisplay');
+        const prevButton = document.getElementById('prevButton');
+        const nextButton = document.getElementById('nextButton');
+        const fileInput = document.getElementById('fileInput');
+        const indexDisplay = document.getElementById('currentIndex');
+        const displayBox = document.querySelector('.display-box');
+
+        fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                try {
+                    const text = await file.text();
+                    wordList = text.split(/\r?\n/).filter(word => word.trim() !== '');
+                    currentIndex = 0;
+                    updateButtons();
+                    updateDisplay();
+                } catch (error) {
+                    console.error('Error reading file:', error);
+                }
+            }
+        });
+
+        prevButton.addEventListener('click', () => {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateDisplay();
+            }
+        });
+
+        nextButton.addEventListener('click', () => {
+            if (currentIndex < wordList.length - 1) {
+                currentIndex++;
+                updateDisplay();
+            }
+        });
+
+        socket.on('command', (cmd) => {
+            console.log('Received command:', cmd);
+            if (cmd === 'next' && !nextButton.disabled) {
+                nextButton.click();
+            } else if (cmd === 'prev' && !prevButton.disabled) {
+                prevButton.click();
+            }
+        });
+
+        function updateButtons() {
+            prevButton.disabled = currentIndex <= 0;
+            nextButton.disabled = currentIndex >= wordList.length - 1;
+            indexDisplay.textContent = wordList.length > 0 
+                ? `Word ${currentIndex + 1} of ${wordList.length}` 
+                : '';
+        }
+
+        function updateDisplay() {
+            if (wordList.length === 0) return;
+
+            const word = wordList[currentIndex];
+            wordDisplay.classList.add('fade-out');
+            
+            setTimeout(() => {
+                wordDisplay.textContent = word;
+                wordDisplay.style.fontSize = '250px';
+				wordDisplay.style.fontWeight = 'bold';
+                wordDisplay.classList.remove('fade-out');
+                updateButtons();
+            }, 500);
+        }
+
+        window.addEventListener('resize', () => {
+            if (wordList.length > 0) {
+                updateDisplay();
+            }
+        });
+    </script>
+</body>
+</html>
